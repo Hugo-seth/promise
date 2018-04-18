@@ -1,0 +1,14 @@
+{
+  "name": "s-promise",
+  "version": "0.0.1",
+  "description": "es6 promise",
+  "main": "app.js",
+  "scripts": {
+    "test": "node test/index"
+  },
+  "author": "Hugo-seth",
+  "license": "MIT",
+  "devDependencies": {
+    "promises-aplus-tests": "^2.1.2"
+  }
+}
