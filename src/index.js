@@ -17,7 +17,6 @@ class Promise {
       if (this._state !== 'pending') return
       this._state = 'resolved'
       this.data = result
-
       for (let fn of this.onResolvedCallbacks) {
         fn(result)
       }
@@ -51,19 +50,14 @@ class Promise {
 
     let promise
 
-    if (this._state === 'resolved') {
+    if (this._state !== 'pending') {
+      const cb = this._state === 'resolved' ? onResolved : onRejected
       return (promise = new Promise((resolve, reject) => {
         setTimeout(() => {
-          invokePromiseCallback(onResolved, this.data, promise, resolve, reject)
+          invokePromiseCallback(cb, this.data, promise, resolve, reject)
         })
       }))
-    } else if (this._state === 'rejected') {
-      return (promise = new Promise((resolve, reject) => {
-        setTimeout(() => {
-          invokePromiseCallback(onRejected, this.data, promise, resolve, reject)
-        })
-      }))
-    } else if (this._state === 'pending') {
+    } else {
       return (promise = new Promise((resolve, reject) => {
         this.onResolvedCallbacks.push(function(result) {
           invokePromiseCallback(onResolved, result, promise, resolve, reject)
@@ -80,14 +74,50 @@ class Promise {
   }
 
   static resolve(result) {
-    const promise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       resolvePromise(undefined, result, resolve, reject)
     })
-    return promise
   }
 
   static reject(error) {
     return new Promise((resolve, reject) => reject(error))
+  }
+
+  static all(promises) {
+    return new Promise((resolve, reject) => {
+      const len = promises.length
+      const resolvedValues = new Array(len)
+      let resolvedCount = 0
+      for (let i = 0; i < len; i++) {
+        Promise.resolve(promises[i]).then(
+          data => {
+            resolvedCount += 1
+            resolvedValues[i] = data
+            if (resolvedCount === len) {
+              resolve(resolvedValues)
+            }
+          },
+          error => {
+            reject(error)
+          }
+        )
+      }
+    })
+  }
+
+  static race(promises) {
+    return new Promise((resolve, reject) => {
+      for (let i = 0; i < len; i++) {
+        Promise.resolve(promises[i]).then(
+          data => {
+            resolve(resolvedValues)
+          },
+          error => {
+            reject(error)
+          }
+        )
+      }
+    })
   }
 }
 
