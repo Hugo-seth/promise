@@ -35,6 +35,7 @@ class Promise {
   }
 
   then(onResolved, onRejected) {
+    // 为了实现值得传递，但没有注册回调时默认添加一个将值直接返回的函数
     onResolved =
       typeof onResolved === 'function'
         ? onResolved
@@ -131,8 +132,10 @@ function invokePromiseCallback(cb, data, promise, resolve, reject) {
 }
 
 function resolvePromise(promise, ret, resolve, reject) {
+  // 兼容带 then 方法的对象
   let then
-  let thenCalledOrThrow = false
+  // 其它 thenable 的函数并不一定标准实现的，所以需要一个 flag 防止多次改变 promise 的状态
+  let settled = false
   if (promise === ret) {
     return reject(new TypeError('检测到 promise 的循环引用'))
   }
@@ -143,13 +146,13 @@ function resolvePromise(promise, ret, resolve, reject) {
         then.call(
           ret,
           function(r) {
-            if (thenCalledOrThrow) return
-            thenCalledOrThrow = true
+            if (settled) return
+            settled = true
             resolvePromise(promise, r, resolve, reject)
           },
           function(e) {
-            if (thenCalledOrThrow) return
-            thenCalledOrThrow = true
+            if (settled) return
+            settled = true
             reject(e)
           }
         )
@@ -157,8 +160,8 @@ function resolvePromise(promise, ret, resolve, reject) {
         resolve(ret)
       }
     } catch (e) {
-      if (thenCalledOrThrow) return
-      thenCalledOrThrow = true
+      if (settled) return
+      settled = true
       reject(e)
     }
   } else {
